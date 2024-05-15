@@ -15,6 +15,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.playing = False
+        self.menu_active = True
 
         self.menu = Menu()
 
@@ -32,7 +33,11 @@ class Game:
 
     def run(self):
         while self.running:
-            if self.playing:
+            if self.menu_active:
+                self.menu_events()
+                self.menu.display_menu(self.screen)
+                pygame.display.flip()
+            elif self.playing:
                 self.events()
                 self.update()
                 self.draw()
@@ -53,6 +58,14 @@ class Game:
                 action = self.menu.handle_input(event)
                 if action == "Start Game":
                     self.playing = True
+                    self.menu_active = False
+                elif action == "Load Save":
+                    load_game(self.player, self.terrain)
+                    self.playing = True
+                    self.menu_active = False
+                elif action == "Settings":
+                    # Placeholder for settings menu
+                    print("Settings menu selected")
                 elif action == "Quit":
                     self.running = False
 
@@ -65,6 +78,8 @@ class Game:
                     save_game(self.player, self.terrain)
                 elif event.key == pygame.K_l:
                     load_game(self.player, self.terrain)
+                elif event.key == pygame.K_ESCAPE:
+                    self.menu_active = True
 
     def update(self):
         keys = pygame.key.get_pressed()

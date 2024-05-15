@@ -4,7 +4,7 @@ from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, BLACK
 class Menu:
     def __init__(self):
         self.font = pygame.font.Font(None, 74)
-        self.options = ["Start Game", "Quit"]
+        self.options = ["Start Game", "Load Save", "Settings", "Quit"]
         self.selected = 0
 
     def display_menu(self, screen):
