@@ -74,5 +74,3 @@ class Game:
         self.hud.draw_fps(self.screen, self.clock)
 
         pygame.display.flip()
-
-#balls
