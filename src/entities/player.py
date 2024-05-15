@@ -1,22 +1,25 @@
 import pygame
-from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_JUMP, GRAVITY, ACCELERATION, MAX_SPEED, SPRINT_ACCELERATION, SPRINT_MAX_SPEED, GROUND_FRICTION, AIR_FRICTION
+from src.settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_JUMP, GRAVITY, ACCELERATION, MAX_SPEED, SPRINT_ACCELERATION, SPRINT_MAX_SPEED, GROUND_FRICTION, AIR_FRICTION, GRID_SIZE
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((30, 60))  # More vertical rectangle shape
-        self.image.fill((255, 0, 0))
+        self.width = 30
+        self.height = 60
+        self.image = pygame.Surface((self.width, self.height))  # Rectangular shape
+        self.image.fill((255, 0, 0))  # Fill with red color
         self.rect = self.image.get_rect()
         self.rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         self.vel_x = 0
         self.vel_y = 0
         self.on_ground = False
 
-    def update(self, keys, platforms):
+    def update(self, keys, platforms_slopes):
+        platforms, slopes = platforms_slopes
         self.handle_input(keys)
         self.apply_gravity()
         self.apply_friction()
-        self.move_and_collide(platforms)
+        self.move_and_collide(platforms, slopes)
 
     def apply_gravity(self):
         if not self.on_ground:
@@ -47,16 +50,16 @@ class Player(pygame.sprite.Sprite):
         else:
             self.vel_x *= AIR_FRICTION
 
-    def move_and_collide(self, platforms):
-        # Move horizontally and check for collisions
+    def move_and_collide(self, platforms, slopes):
+        # Check for horizontal collisions
         self.rect.x += self.vel_x
-        self.handle_horizontal_collisions(platforms)
+        self.handle_horizontal_collisions(platforms, slopes)
 
-        # Move vertically and check for collisions
+        # Check for vertical collisions
         self.rect.y += self.vel_y
-        self.handle_vertical_collisions(platforms)
+        self.handle_vertical_collisions(platforms, slopes)
 
-    def handle_horizontal_collisions(self, platforms):
+    def handle_horizontal_collisions(self, platforms, slopes):
         collisions = self.get_collisions(platforms)
         for platform in collisions:
             if self.vel_x > 0:  # Moving right
@@ -65,7 +68,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.left = platform.right
             self.vel_x = 0
 
-    def handle_vertical_collisions(self, platforms):
+    def handle_vertical_collisions(self, platforms, slopes):
         self.on_ground = False
         collisions = self.get_collisions(platforms)
         for platform in collisions:
@@ -75,6 +78,17 @@ class Player(pygame.sprite.Sprite):
                 self.on_ground = True
             elif self.vel_y < 0:  # Jumping
                 self.rect.top = platform.bottom
+                self.vel_y = 0
+
+        # Handle slope collisions
+        slope_collisions = self.get_collisions(slopes)
+        for slope in slope_collisions:
+            if self.vel_y > 0:  # Falling
+                self.rect.bottom = slope.top
+                self.vel_y = 0
+                self.on_ground = True
+            elif self.vel_y < 0:  # Jumping
+                self.rect.top = slope.bottom
                 self.vel_y = 0
 
     def get_collisions(self, platforms):
