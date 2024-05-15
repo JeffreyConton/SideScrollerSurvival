@@ -74,6 +74,7 @@ class Game:
                         self.playing = True
                         self.menu_active = False
                         self.error_message = None
+                        self.refresh_game_state()  # Refresh game state after loading
                     else:
                         self.error_message = "No save file found!"
                 elif action == "Settings":
@@ -100,7 +101,8 @@ class Game:
                 if event.key == pygame.K_s:
                     save_game(self.player, self.terrain)
                 elif event.key == pygame.K_l:
-                    load_game(self.player, self.terrain)
+                    if load_game(self.player, self.terrain):
+                        self.refresh_game_state()
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_active = True
 
@@ -158,3 +160,7 @@ class Game:
         posX = (SCREEN_WIDTH / 2) - (width / 2)
         posY = (SCREEN_HEIGHT / 2) - (height / 2) - 200
         self.screen.blit(label, (posX, posY))
+
+    def refresh_game_state(self):
+        # Refresh the game state after loading
+        self.camera.update(self.player)
