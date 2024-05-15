@@ -4,6 +4,7 @@ from src.world.camera import Camera
 from src.entities.player import Player
 from src.world.terrain import generate_terrain, draw_terrain, expand_terrain
 from src.ui.menu import Menu
+from src.ui.settings import Settings
 from src.ui.hud import HUD
 from src.systems.save_load import save_game, load_game
 
@@ -16,8 +17,11 @@ class Game:
         self.running = True
         self.playing = False
         self.menu_active = True
+        self.settings_active = False
+        self.error_message = None
 
         self.menu = Menu()
+        self.settings = Settings()
 
         self.camera = Camera(SCREEN_WIDTH * 10, SCREEN_HEIGHT * 2)  # Adjusted for taller levels
 
@@ -36,6 +40,12 @@ class Game:
             if self.menu_active:
                 self.menu_events()
                 self.menu.display_menu(self.screen)
+                if self.error_message:
+                    self.display_error(self.error_message)
+                pygame.display.flip()
+            elif self.settings_active:
+                self.settings_events()
+                self.settings.display_settings(self.screen)
                 pygame.display.flip()
             elif self.playing:
                 self.events()
@@ -60,14 +70,27 @@ class Game:
                     self.playing = True
                     self.menu_active = False
                 elif action == "Load Save":
-                    load_game(self.player, self.terrain)
-                    self.playing = True
-                    self.menu_active = False
+                    if load_game(self.player, self.terrain):
+                        self.playing = True
+                        self.menu_active = False
+                        self.error_message = None
+                    else:
+                        self.error_message = "No save file found!"
                 elif action == "Settings":
-                    # Placeholder for settings menu
-                    print("Settings menu selected")
+                    self.settings_active = True
+                    self.menu_active = False
                 elif action == "Quit":
                     self.running = False
+
+    def settings_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                action = self.settings.handle_input(event)
+                if action == "Back to Menu":
+                    self.settings_active = False
+                    self.menu_active = True
 
     def events(self):
         for event in pygame.event.get():
@@ -126,3 +149,12 @@ class Game:
         self.hud.draw_fps(self.screen, self.clock)
 
         pygame.display.flip()
+
+    def display_error(self, message):
+        font = pygame.font.Font(None, 74)
+        label = font.render(message, True, (255, 0, 0))
+        width = label.get_width()
+        height = label.get_height()
+        posX = (SCREEN_WIDTH / 2) - (width / 2)
+        posY = (SCREEN_HEIGHT / 2) - (height / 2) - 200
+        self.screen.blit(label, (posX, posY))
