@@ -7,6 +7,7 @@ from src.ui.menu import Menu
 from src.ui.settings import Settings
 from src.ui.hud import HUD
 from src.systems.save_load import save_game, load_game
+from src.systems.time import TimeSystem
 
 class Game:
     def __init__(self):
@@ -18,10 +19,12 @@ class Game:
         self.playing = False
         self.menu_active = True
         self.settings_active = False
+        self.fullscreen = False
         self.error_message = None
 
         self.menu = Menu()
         self.settings = Settings()
+        self.time_system = TimeSystem()
 
         self.camera = Camera(SCREEN_WIDTH * 10, SCREEN_HEIGHT * 2)  # Adjusted for taller levels
 
@@ -37,15 +40,14 @@ class Game:
 
     def run(self):
         while self.running:
-            if self.menu_active:
-                self.menu_events()
-                self.menu.display_menu(self.screen)
+            if self.menu_active or self.settings_active:
+                self.menu_or_settings_events()
+                if self.menu_active:
+                    self.menu.display_menu(self.screen)
+                if self.settings_active:
+                    self.settings.display_settings(self.screen)
                 if self.error_message:
                     self.display_error(self.error_message)
-                pygame.display.flip()
-            elif self.settings_active:
-                self.settings_events()
-                self.settings.display_settings(self.screen)
                 pygame.display.flip()
             elif self.playing:
                 self.events()
@@ -59,6 +61,37 @@ class Game:
             self.clock.tick(FPS)
 
         pygame.quit()
+
+    def menu_or_settings_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if self.menu_active:
+                    action = self.menu.handle_input(event)
+                    if action == "Start Game":
+                        self.playing = True
+                        self.menu_active = False
+                    elif action == "Load Save":
+                        if load_game(self.player, self.terrain):
+                            self.playing = True
+                            self.menu_active = False
+                            self.error_message = None
+                            self.refresh_game_state()  # Refresh game state after loading
+                        else:
+                            self.error_message = "No save file found!"
+                    elif action == "Settings":
+                        self.settings_active = True
+                        self.menu_active = False
+                    elif action == "Quit":
+                        self.running = False
+                elif self.settings_active:
+                    action = self.settings.handle_input(event)
+                    if action == "Toggle Fullscreen":
+                        self.toggle_fullscreen()
+                    elif action == "Back to Menu":
+                        self.settings_active = False
+                        self.menu_active = True
 
     def menu_events(self):
         for event in pygame.event.get():
@@ -89,7 +122,9 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 action = self.settings.handle_input(event)
-                if action == "Back to Menu":
+                if action == "Toggle Fullscreen":
+                    self.toggle_fullscreen()
+                elif action == "Back to Menu":
                     self.settings_active = False
                     self.menu_active = True
 
@@ -111,6 +146,7 @@ class Game:
         platforms_slopes = self.get_platforms_and_slopes()
         self.all_sprites.update(keys, platforms_slopes)
         self.camera.update(self.player)
+        self.time_system.update()
 
         # Expand terrain if the player is near the edges
         player_col = self.player.rect.x // GRID_SIZE
@@ -149,6 +185,7 @@ class Game:
 
         # Render HUD elements
         self.hud.draw_fps(self.screen, self.clock)
+        self.hud.draw_time(self.screen, self.time_system)
 
         pygame.display.flip()
 
