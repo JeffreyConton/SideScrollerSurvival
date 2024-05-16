@@ -4,7 +4,7 @@ import os
 SAVE_FILE = "savegame.json"
 
 
-def save_game(player, terrain):
+def save_game(player, terrain, time_system):
     data = {
         "player": {
             "x": player.rect.x,
@@ -12,13 +12,14 @@ def save_game(player, terrain):
             "vel_x": player.vel_x,
             "vel_y": player.vel_y
         },
-        "terrain": terrain
+        "terrain": terrain,
+        "time_system": time_system.save_time()
     }
     with open(SAVE_FILE, "w") as file:
         json.dump(data, file)
 
 
-def load_game(player, terrain):
+def load_game(player, terrain, time_system):
     if not os.path.exists(SAVE_FILE):
         return False
 
@@ -31,4 +32,6 @@ def load_game(player, terrain):
         for row in range(len(terrain)):
             for col in range(len(terrain[row])):
                 terrain[row][col] = data["terrain"][row][col]
+
+        time_system.load_time(data["time_system"])
     return True

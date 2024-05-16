@@ -67,17 +67,23 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
-                if self.menu_active:
+                if event.key == pygame.K_ESCAPE and self.menu_active:
+                    self.playing = True
+                    self.menu_active = False
+                    self.time_system.resume()
+                elif self.menu_active:
                     action = self.menu.handle_input(event)
                     if action == "Start Game":
                         self.playing = True
                         self.menu_active = False
+                        self.time_system.resume()
                     elif action == "Load Save":
-                        if load_game(self.player, self.terrain):
+                        if load_game(self.player, self.terrain, self.time_system):
                             self.playing = True
                             self.menu_active = False
                             self.error_message = None
                             self.refresh_game_state()  # Refresh game state after loading
+                            self.time_system.resume()
                         else:
                             self.error_message = "No save file found!"
                     elif action == "Settings":
@@ -87,46 +93,9 @@ class Game:
                         self.running = False
                 elif self.settings_active:
                     action = self.settings.handle_input(event)
-                    if action == "Toggle Fullscreen":
-                        self.toggle_fullscreen()
-                    elif action == "Back to Menu":
+                    if action == "Back to Menu":
                         self.settings_active = False
                         self.menu_active = True
-
-    def menu_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                action = self.menu.handle_input(event)
-                if action == "Start Game":
-                    self.playing = True
-                    self.menu_active = False
-                elif action == "Load Save":
-                    if load_game(self.player, self.terrain):
-                        self.playing = True
-                        self.menu_active = False
-                        self.error_message = None
-                        self.refresh_game_state()  # Refresh game state after loading
-                    else:
-                        self.error_message = "No save file found!"
-                elif action == "Settings":
-                    self.settings_active = True
-                    self.menu_active = False
-                elif action == "Quit":
-                    self.running = False
-
-    def settings_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                action = self.settings.handle_input(event)
-                if action == "Toggle Fullscreen":
-                    self.toggle_fullscreen()
-                elif action == "Back to Menu":
-                    self.settings_active = False
-                    self.menu_active = True
 
     def events(self):
         for event in pygame.event.get():
@@ -134,12 +103,13 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game(self.player, self.terrain)
+                    save_game(self.player, self.terrain, self.time_system)
                 elif event.key == pygame.K_l:
-                    if load_game(self.player, self.terrain):
+                    if load_game(self.player, self.terrain, self.time_system):
                         self.refresh_game_state()
                 elif event.key == pygame.K_ESCAPE:
                     self.menu_active = True
+                    self.time_system.pause()
 
     def update(self):
         keys = pygame.key.get_pressed()
